@@ -55,22 +55,8 @@ export async function PATCH(
       status: 404,
       headers: { "Content-Type": "application/json" },
     });
-<<<<<<< HEAD
   // ADMIN can update any task. MEMBER can only update their own status.
-  const projectRole = await getProjectRole(
-    user._id.toString(),
-    task.projectId.toString(),
-  );
-=======
-    const projectRole = await getProjectRole(user._id.toString(), task.projectId.toString());
->>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
-  if (!projectRole) {
-    return new Response(JSON.stringify({ error: "Forbidden" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-  if (projectRole !== "ADMIN") {
+  if (user.role === "MEMBER") {
     if (task.assignedTo?.toString() !== user._id.toString()) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
@@ -107,28 +93,8 @@ export async function DELETE(
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
-  const task = await getTaskById(params.id);
-  if (!task)
-<<<<<<< HEAD
-    return new Response(JSON.stringify({ error: "Not Found" }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
-  const projectRole = await getProjectRole(
-    user._id.toString(),
-    task.projectId.toString(),
-  );
-  if (projectRole !== "ADMIN")
-    return new Response(JSON.stringify({ error: "Forbidden" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
-=======
-    return new Response(JSON.stringify({ error: "Not Found" }), { status: 404, headers: { "Content-Type": "application/json" } });
-  const projectRole = await getProjectRole(user._id.toString(), task.projectId.toString());
-  if (projectRole !== "ADMIN")
-    return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { "Content-Type": "application/json" } });
->>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
+  const forbidden = requireRole(user, ["ADMIN"]);
+  if (forbidden) return forbidden;
   await deleteTask(params.id);
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,

@@ -1,18 +1,10 @@
 import connectToDatabase from "../lib/mongodb";
 import User from "../models/User";
 
-<<<<<<< HEAD
 export type CreateUserInput = Pick<
   IUser,
-  "name" | "email" | "password" 
+  "name" | "email" | "password" | "role"
 >;
-=======
-export type CreateUserInput = {
-  name: string;
-  email: string;
-  password: string;
-};
->>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
 
 export async function createUser(data: CreateUserInput) {
   await connectToDatabase();

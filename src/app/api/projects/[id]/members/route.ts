@@ -24,6 +24,7 @@ export async function POST(
   const projectRole = await getProjectRole(user._id.toString(), params.id);
   if (projectRole !== "ADMIN")
 <<<<<<< HEAD
+<<<<<<< HEAD
     return new Response(
       JSON.stringify({
         error: "Forbidden — only project admins can add members",
@@ -34,10 +35,15 @@ export async function POST(
       },
     );
 =======
+=======
+>>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
     return new Response(JSON.stringify({ error: "Forbidden — only project admins can add members" }), {
       status: 403,
       headers: { "Content-Type": "application/json" },
     });
+<<<<<<< HEAD
+>>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
+=======
 >>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
   try {
     const body = await req.json();

@@ -1,8 +1,5 @@
 import { getUserFromRequest } from "../../../../../../middleware/auth";
-<<<<<<< HEAD
-import { getProjectRole } from "../../../../../../services/projectService";
-=======
->>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
+import { requireRole } from "../../../../../../middleware/authorize";
 import type { RouteContext } from "../../../../../../types/route";
 import ProjectMember from "../../../../../../models/ProjectMember";
 import { getProjectRole } from "../../../../../../services/projectService";
@@ -42,22 +39,8 @@ export async function DELETE(
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
-  const projectRole = await getProjectRole(user._id.toString(), params.id);
-  if (projectRole !== "ADMIN")
-<<<<<<< HEAD
-    return new Response(
-      JSON.stringify({ error: "Only admins can remove members" }),
-      {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
-=======
-    return new Response(JSON.stringify({ error: "Only admins can remove members" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
->>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
+  const forbidden = requireRole(user, ["ADMIN"]);
+  if (forbidden) return forbidden;
   await ProjectMember.findByIdAndDelete(params.memberId);
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,

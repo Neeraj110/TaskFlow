@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       password: parsed.password
 =======
       password: parsed.password,
->>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
+      role: "MEMBER",
     });
 
     return NextResponse.json(
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
           email: user.email
 =======
           email: user.email,
->>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
+          role: user.role,
         },
       },
       { status: 201 },
