@@ -1,54 +1,73 @@
 import bcrypt from "bcryptjs";
 import mongoose, { Document, Model, Schema } from "mongoose";
 
-export type Role = "ADMIN" | "MEMBER";
-
 export interface IUser extends Document {
+  _id: mongoose.Types.ObjectId;
   name: string;
   email: string;
   password: string;
-  avatar?: string;
+  avatar: string;
   createdAt: Date;
   updatedAt: Date;
-  comparePassword: (password: string) => Promise<boolean>;
-}
-
-export interface IUserMethods {
   comparePassword(password: string): Promise<boolean>;
 }
 
-const UserSchema = new Schema<IUser, Model<IUser>, IUserMethods>(
+const UserSchema = new Schema<IUser>(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true, index: true },
-    password: { type: String, required: true },
-    avatar:   { type: String, default: "" },
+    name: {
+      type: String,
+      required: [true, "Name is required"],
+      trim: true,
+      minlength: [2, "Name must be at least 2 characters"],
+    },
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+      match: [/^\S+@\S+\.\S+$/, "Invalid email format"],
+    },
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+      minlength: [6, "Password must be at least 6 characters"],
+    },
+    avatar: {
+      type: String,
+      default: "",
+    },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    // Password field JSON response mein nahi aayega
+    toJSON: {
+      transform(_, ret) {
+        delete ret.password;
+        return ret;
+      },
+    },
+  },
 );
 
+// ✅ Password hash karo before save
 UserSchema.pre("save", async function (next) {
-  const user = this as IUser;
-
-  if (!user.isModified("password") || !user.password) {
-    return next();
-  }
-
+  if (!this.isModified("password")) return next();
   try {
-    const hashedPassword = await bcrypt.hash(user.password, 10);
-    user.password = hashedPassword;
+    this.password = await bcrypt.hash(this.password, 12);
     return next();
   } catch (error) {
     return next(error as Error);
   }
 });
 
-UserSchema.methods.comparePassword = async function (password: string) {
-  const user = this as IUser;
-  if (!user.password) {
-    return false;
-  }
-  return bcrypt.compare(password, user.password);
+// ✅ Password compare method
+UserSchema.methods.comparePassword = async function (
+  candidatePassword: string,
+): Promise<boolean> {
+  if (!this.password) return false;
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
 const User: Model<IUser> =
