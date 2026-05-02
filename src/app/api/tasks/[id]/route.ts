@@ -1,5 +1,5 @@
 import { getUserFromRequest } from "../../../../middleware/auth";
-import { requireRole } from "../../../../middleware/authorize";
+import { getProjectRole } from "../../../../services/projectService";
 import type { RouteContext } from "../../../../types/route";
 import {
   getTaskById,
@@ -55,15 +55,20 @@ export async function PATCH(
       status: 404,
       headers: { "Content-Type": "application/json" },
     });
-  // ADMIN can update any task. MEMBER can only update their own status.
-  if (user.role === "MEMBER") {
+    const projectRole = await getProjectRole(user._id.toString(), task.projectId.toString());
+  if (!projectRole) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (projectRole !== "ADMIN") {
     if (task.assignedTo?.toString() !== user._id.toString()) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },
       });
     }
-    // restrict fields for members
     const allowed = { status: body.status };
     const updated = await updateTask(params.id, allowed);
     return new Response(JSON.stringify({ task: updated }), {
@@ -71,7 +76,6 @@ export async function PATCH(
       headers: { "Content-Type": "application/json" },
     });
   }
-  // ADMIN
   const updated = await updateTask(params.id, body);
   return new Response(JSON.stringify({ task: updated }), {
     status: 200,
@@ -95,8 +99,12 @@ export async function DELETE(
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
-  const forbidden = requireRole(user, ["ADMIN"]);
-  if (forbidden) return forbidden;
+  const task = await getTaskById(params.id);
+  if (!task)
+    return new Response(JSON.stringify({ error: "Not Found" }), { status: 404, headers: { "Content-Type": "application/json" } });
+  const projectRole = await getProjectRole(user._id.toString(), task.projectId.toString());
+  if (projectRole !== "ADMIN")
+    return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { "Content-Type": "application/json" } });
   await deleteTask(params.id);
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,

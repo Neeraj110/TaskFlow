@@ -1,6 +1,6 @@
 import { getUserFromRequest } from "../../../middleware/auth";
-import { requireRole } from "../../../middleware/authorize";
 import { createTask, getTasks } from "../../../services/taskService";
+import { getProjectRole, getProjectsForUser } from "../../../services/projectService";
 import { z } from "zod";
 
 const createTaskSchema = z.object({
@@ -20,11 +20,15 @@ export async function GET(req: Request) {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
+
+  const memberships = await getProjectsForUser(user._id.toString());
+  const projectIds = memberships.map((project) => project._id);
+
   const url = new URL(req.url);
   const status = url.searchParams.get("status");
-  const filter: Record<string, unknown> = {};
+  const filter: Record<string, unknown> = { projectId: { $in: projectIds } };
   if (status) filter.status = status;
-  if (user.role === "MEMBER") filter.assignedTo = user._id;
+
   const tasks = await getTasks(filter);
   return new Response(JSON.stringify({ tasks }), {
     status: 200,
@@ -39,15 +43,26 @@ export async function POST(req: Request) {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
-  const forbidden = requireRole(user, ["ADMIN"]);
-  if (forbidden) return forbidden;
   try {
     const body = await req.json();
     const parsed = createTaskSchema.parse(body);
-    const task = await createTask({
-      ...parsed,
-      createdBy: user._id.toString(),
-    });
+
+    const projectRole = await getProjectRole(user._id.toString(), parsed.projectId);
+    if (!projectRole) {
+      return new Response(JSON.stringify({ error: "Not a project member" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (parsed.assignedTo && parsed.assignedTo !== user._id.toString() && projectRole !== "ADMIN") {
+      return new Response(JSON.stringify({ error: "Only admins can assign to others" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const task = await createTask({ ...parsed, createdBy: user._id.toString() });
     return new Response(JSON.stringify({ task }), {
       status: 201,
       headers: { "Content-Type": "application/json" },
