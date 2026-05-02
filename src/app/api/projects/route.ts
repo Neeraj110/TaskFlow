@@ -3,7 +3,6 @@ import {
   createProject,
   getProjectsForUser,
 } from "../../../services/projectService";
-import { requireRole } from "../../../middleware/authorize";
 import { z } from "zod";
 
 const createProjectSchema = z.object({
@@ -35,8 +34,6 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const parsed = createProjectSchema.parse(body);
-    const forbidden = requireRole(user, ["ADMIN"]);
-    if (forbidden) return forbidden;
     const project = await createProject({
       title: parsed.title,
       description: parsed.description,

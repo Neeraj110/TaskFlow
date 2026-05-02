@@ -3,6 +3,7 @@ import StatCard from "../../components/dashboard/StatCard";
 import TaskTable from "../../components/dashboard/TaskTable";
 import ProjectGrid from "../../components/dashboard/ProjectGrid";
 import ActivityFeed from "../../components/dashboard/ActivityFeed";
+import { headers } from "next/headers";
 
 type ApiProject = {
     _id: string;
@@ -31,12 +32,20 @@ export default async function DashboardPage() {
     let projectsData: { projects: ApiProject[] } = { projects: [] };
 
     try {
+        const headerList = await headers();
+        const host = headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "localhost:3000";
+        const proto = headerList.get("x-forwarded-proto") ?? "http";
+        const baseUrl = process.env.NEXTAUTH_URL ?? `${proto}://${host}`;
+        const cookie = headerList.get("cookie") ?? "";
+
         const [tasksRes, projectsRes] = await Promise.all([
-            fetch("/api/tasks", {
+            fetch(`${baseUrl}/api/tasks`, {
                 cache: "no-store",
+                headers: { cookie },
             }),
-            fetch("/api/projects", {
+            fetch(`${baseUrl}/api/projects`, {
                 cache: "no-store",
+                headers: { cookie },
             }),
         ]);
 

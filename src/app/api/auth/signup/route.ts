@@ -17,7 +17,6 @@ export async function POST(req: Request) {
       name: parsed.name,
       email: parsed.email,
       password: parsed.password,
-      role: "MEMBER",
     });
 
     return NextResponse.json(
@@ -26,7 +25,6 @@ export async function POST(req: Request) {
           id: user._id,
           name: user.name,
           email: user.email,
-          role: user.role,
         },
       },
       { status: 201 },

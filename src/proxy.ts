@@ -5,9 +5,6 @@ import type { NextRequestWithAuth } from "next-auth/middleware";
 // Define public routes that don't need authentication
 const publicRoutes = ["/", "/login", "/signup", "/api/auth"];
 
-// Define admin-only routes
-const adminRoutes = ["/admin", "/api/admin"];
-
 export const proxy = withAuth(
   function proxyHandler(req: NextRequestWithAuth) {
     const { pathname } = req.nextUrl;
@@ -27,11 +24,6 @@ export const proxy = withAuth(
         // Allow public routes
         if (publicRoutes.some((route) => pathname.startsWith(route))) {
           return true;
-        }
-
-        // Check admin routes
-        if (adminRoutes.some((route) => pathname.startsWith(route))) {
-          return token?.role === "ADMIN";
         }
 
         // Protected dashboard routes requiring authentication

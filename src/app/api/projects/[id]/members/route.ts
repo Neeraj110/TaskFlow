@@ -1,5 +1,5 @@
 import { getUserFromRequest } from "../../../../../middleware/auth";
-import { requireRole } from "../../../../../middleware/authorize";
+import { getProjectRole } from "../../../../../services/projectService";
 import type { RouteContext } from "../../../../../types/route";
 import ProjectMember from "../../../../../models/ProjectMember";
 import { connectToDatabase } from "../../../../../lib/mongodb";
@@ -21,8 +21,12 @@ export async function POST(
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
-  const forbidden = requireRole(user, ["ADMIN"]);
-  if (forbidden) return forbidden;
+  const projectRole = await getProjectRole(user._id.toString(), params.id);
+  if (projectRole !== "ADMIN")
+    return new Response(JSON.stringify({ error: "Forbidden — only project admins can add members" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
   try {
     const body = await req.json();
     await connectToDatabase();

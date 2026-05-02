@@ -6,7 +6,6 @@ import User from "../models/User";
 
 type TokenWithMeta = JWT & {
   id?: string;
-  role?: string;
   provider?: string;
 };
 
@@ -52,7 +51,6 @@ export const authOptions: NextAuthOptions = {
             id: user._id.toString(),
             email: user.email,
             name: user.name,
-            role: user.role,
           };
         } catch (error) {
           throw new Error(
@@ -67,7 +65,6 @@ export const authOptions: NextAuthOptions = {
       const typedToken = token as TokenWithMeta;
       if (user) {
         typedToken.id = user.id;
-        typedToken.role = (user as { role?: string }).role;
       }
       if (account) {
         typedToken.provider = account.provider;
@@ -78,7 +75,6 @@ export const authOptions: NextAuthOptions = {
       const typedToken = token as TokenWithMeta;
       if (session.user) {
         session.user.id = typedToken.id || "";
-        session.user.role = typedToken.role || "MEMBER";
       }
       return session;
     },
