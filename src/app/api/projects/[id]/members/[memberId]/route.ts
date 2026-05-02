@@ -1,7 +1,30 @@
 import { getUserFromRequest } from "../../../../../../middleware/auth";
-import { requireRole } from "../../../../../../middleware/authorize";
+<<<<<<< HEAD
+import { getProjectRole } from "../../../../../../services/projectService";
+=======
+>>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
 import type { RouteContext } from "../../../../../../types/route";
 import ProjectMember from "../../../../../../models/ProjectMember";
+import { getProjectRole } from "../../../../../../services/projectService";
+
+export async function PATCH(
+  req: Request,
+  context: RouteContext<{ id: string; memberId: string }>,
+) {
+  const params = await context.params;
+  const user = await getUserFromRequest(req);
+  if (!user)
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
+
+  const projectRole = await getProjectRole(user._id.toString(), params.id);
+  if (projectRole !== "ADMIN") {
+    return new Response(JSON.stringify({ error: "Only admins can change roles" }), { status: 403, headers: { "Content-Type": "application/json" } });
+  }
+
+  const { role } = await req.json();
+  await ProjectMember.findByIdAndUpdate(params.memberId, { role });
+  return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } });
+}
 
 export async function DELETE(
   req: Request,
@@ -19,9 +42,51 @@ export async function DELETE(
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
-  const forbidden = requireRole(user, ["ADMIN"]);
-  if (forbidden) return forbidden;
+  const projectRole = await getProjectRole(user._id.toString(), params.id);
+  if (projectRole !== "ADMIN")
+<<<<<<< HEAD
+    return new Response(
+      JSON.stringify({ error: "Only admins can remove members" }),
+      {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+=======
+    return new Response(JSON.stringify({ error: "Only admins can remove members" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+>>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
   await ProjectMember.findByIdAndDelete(params.memberId);
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+export async function PATCH(
+  req: Request,
+  context: RouteContext<{ id: string; memberId: string }>,
+) {
+  const params = await context.params;
+  const user = await getUserFromRequest(req);
+  if (!user)
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+
+  const projectRole = await getProjectRole(user._id.toString(), params.id);
+  if (projectRole !== "ADMIN") {
+    return new Response(
+      JSON.stringify({ error: "Only admins can change roles" }),
+      { status: 403, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  const { role } = await req.json();
+  await ProjectMember.findByIdAndUpdate(params.memberId, { role });
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,
     headers: { "Content-Type": "application/json" },
