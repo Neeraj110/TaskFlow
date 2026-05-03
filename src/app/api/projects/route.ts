@@ -5,8 +5,9 @@ import {
 } from "../../../services/projectService";
 import { z } from "zod";
 
+// ✅ BUG FIX: title → name (Project model mein name hai)
 const createProjectSchema = z.object({
-  title: z.string().min(2),
+  name: z.string().min(2, "Project name must be at least 2 characters"),
   description: z.string().optional(),
 });
 
@@ -17,13 +18,22 @@ export async function GET(req: Request) {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
-  const projects = await getProjectsForUser(user._id.toString());
-  return new Response(JSON.stringify({ projects }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  try {
+    const projects = await getProjectsForUser(user._id.toString());
+    return new Response(JSON.stringify({ projects }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Server error";
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 }
 
+// ✅ Koi bhi logged-in user project bana sakta hai — no global role check
 export async function POST(req: Request) {
   const user = await getUserFromRequest(req);
   if (!user)
@@ -35,7 +45,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parsed = createProjectSchema.parse(body);
     const project = await createProject({
-      title: parsed.title,
+      name: parsed.name, // ✅ name (not title)
       description: parsed.description,
       createdBy: user._id.toString(),
     });

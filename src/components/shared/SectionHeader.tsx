@@ -2,12 +2,14 @@ interface SectionHeaderProps {
     title: string;
     subtitle?: string;
     actionLabel?: string;
+    onAction?: () => void;
 }
 
 export default function SectionHeader({
     title,
     subtitle,
     actionLabel,
+    onAction,
 }: SectionHeaderProps) {
     return (
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -18,7 +20,10 @@ export default function SectionHeader({
                 ) : null}
             </div>
             {actionLabel ? (
-                <button className="rounded-full border border-zinc-200 px-4 py-2 text-xs font-semibold text-zinc-700">
+                <button
+                    onClick={onAction}
+                    className="rounded-full border border-zinc-200 px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+                >
                     {actionLabel}
                 </button>
             ) : null}

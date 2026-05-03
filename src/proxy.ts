@@ -1,19 +1,26 @@
+// ✅ BUG FIX: Ye file project ROOT mein honi chahiye — src/proxy.ts nahi
+// Filename: middleware.ts (root level, next to package.json)
+// src/proxy.ts DELETE karo aur ye file root mein rakho
+
 import { NextResponse } from "next/server";
 import { withAuth } from "next-auth/middleware";
 import type { NextRequestWithAuth } from "next-auth/middleware";
 
-// Define public routes that don't need authentication
 const publicRoutes = ["/", "/login", "/signup", "/api/auth"];
 
-export const proxy = withAuth(
-  function proxyHandler(req: NextRequestWithAuth) {
+// ✅ Default export hona chahiye — proxy export nahi
+export default withAuth(
+  function middleware(req: NextRequestWithAuth) {
     const { pathname } = req.nextUrl;
+
+    // Already logged in → login/signup pe redirect to dashboard
     if (
       (pathname === "/login" || pathname === "/signup") &&
       req.nextauth.token
     ) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
+
     return NextResponse.next();
   },
   {
@@ -21,26 +28,23 @@ export const proxy = withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
 
-        // Allow public routes
+        // Public routes — no auth needed
         if (publicRoutes.some((route) => pathname.startsWith(route))) {
           return true;
         }
 
-        // Protected dashboard routes requiring authentication
-        const protectedDashboardRoutes = ["/dashboard", "/projects"];
-
+        // Protected pages
         if (
-          protectedDashboardRoutes.some((route) => pathname.startsWith(route))
+          pathname.startsWith("/dashboard") ||
+          pathname.startsWith("/projects") ||
+          pathname.startsWith("/tasks")
         ) {
           return !!token;
         }
 
-        // API routes protection
+        // API routes — public auth routes allow, rest need token
         if (pathname.startsWith("/api")) {
-          const publicApiRoutes = ["/api/auth"];
-          if (publicApiRoutes.some((route) => pathname.startsWith(route))) {
-            return true;
-          }
+          if (pathname.startsWith("/api/auth")) return true;
           return !!token;
         }
 
@@ -50,21 +54,14 @@ export const proxy = withAuth(
   },
 );
 
-// Matcher configuration
 export const config = {
   matcher: [
-    // Protected dashboard routes
     "/dashboard/:path*",
     "/projects/:path*",
-
-    // API routes (except public ones)
+    "/tasks/:path*",
     "/api/:path*",
-
-    // Auth routes
     "/login",
     "/signup",
-
-    // Exclude static files and next internals
     "/((?!_next/static|_next/image|favicon.ico|public).*)",
   ],
 };
