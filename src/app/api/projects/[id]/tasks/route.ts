@@ -1,35 +1,41 @@
-import { getUserFromRequest } from "../../../middleware/auth";
-import { createTask, getTasks } from "../../../services/taskService";
-import {
-  getProjectRole,
-  getProjectsForUser,
-} from "../../../services/projectService";
 import { z } from "zod";
+import { getUserFromRequest } from "../../../../../middleware/auth";
+import { getProjectRole } from "../../../../../services/projectService";
+import { createTask, getTasks } from "../../../../../services/taskService";
+import type { RouteContext } from "../../../../../types/route";
 
-const createTaskSchema = z.object({
+const createProjectTaskSchema = z.object({
   title: z.string().min(2),
   description: z.string().optional(),
   status: z.enum(["TODO", "IN_PROGRESS", "DONE"]).optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
   dueDate: z.coerce.date().optional(),
   assignedTo: z.string().optional(),
-  projectId: z.string().min(1),
 });
 
-export async function GET(req: Request) {
+export async function GET(req: Request, context: RouteContext<{ id: string }>) {
+  const params = await context.params;
+  if (!params?.id)
+    return new Response(JSON.stringify({ error: "Invalid project id" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   const user = await getUserFromRequest(req);
   if (!user)
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
+  const projectRole = await getProjectRole(user._id.toString(), params.id);
+  if (!projectRole)
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+
   const url = new URL(req.url);
   const status = url.searchParams.get("status");
-  const projects = await getProjectsForUser(user._id.toString());
-  const projectIds = projects.map((project) => project._id);
-  const filter: Record<string, unknown> = {
-    $or: [{ assignedTo: user._id }, { projectId: { $in: projectIds } }],
-  };
+  const filter: Record<string, unknown> = { projectId: params.id };
   if (status) filter.status = status;
 
   const tasks = await getTasks(filter);
@@ -39,25 +45,32 @@ export async function GET(req: Request) {
   });
 }
 
-export async function POST(req: Request) {
+export async function POST(
+  req: Request,
+  context: RouteContext<{ id: string }>,
+) {
+  const params = await context.params;
+  if (!params?.id)
+    return new Response(JSON.stringify({ error: "Invalid project id" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   const user = await getUserFromRequest(req);
   if (!user)
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
+  const projectRole = await getProjectRole(user._id.toString(), params.id);
+  if (!projectRole)
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+
   try {
     const body = await req.json();
-    const parsed = createTaskSchema.parse(body);
-    const projectRole = await getProjectRole(
-      user._id.toString(),
-      parsed.projectId,
-    );
-    if (!projectRole)
-      return new Response(JSON.stringify({ error: "Not a project member" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      });
+    const parsed = createProjectTaskSchema.parse(body);
     if (parsed.assignedTo && parsed.assignedTo !== user._id.toString()) {
       if (projectRole !== "ADMIN")
         return new Response(
@@ -68,8 +81,10 @@ export async function POST(req: Request) {
           },
         );
     }
+
     const task = await createTask({
       ...parsed,
+      projectId: params.id,
       createdBy: user._id.toString(),
     });
     return new Response(JSON.stringify({ task }), {

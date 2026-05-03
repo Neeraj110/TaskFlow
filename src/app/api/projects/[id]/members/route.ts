@@ -3,7 +3,14 @@ import { getProjectRole } from "../../../../../services/projectService";
 import type { RouteContext } from "../../../../../types/route";
 import ProjectMember from "../../../../../models/ProjectMember";
 import { connectToDatabase } from "../../../../../lib/mongodb";
+import { findUserByEmail } from "../../../../../services/userService";
 import mongoose from "mongoose";
+import { z } from "zod";
+
+const addMemberSchema = z.object({
+  email: z.string().email(),
+  role: z.enum(["ADMIN", "MEMBER"]).optional(),
+});
 
 export async function POST(
   req: Request,
@@ -23,8 +30,6 @@ export async function POST(
     });
   const projectRole = await getProjectRole(user._id.toString(), params.id);
   if (projectRole !== "ADMIN")
-<<<<<<< HEAD
-<<<<<<< HEAD
     return new Response(
       JSON.stringify({
         error: "Forbidden — only project admins can add members",
@@ -34,24 +39,20 @@ export async function POST(
         headers: { "Content-Type": "application/json" },
       },
     );
-=======
-=======
->>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
-    return new Response(JSON.stringify({ error: "Forbidden — only project admins can add members" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
-<<<<<<< HEAD
->>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
-=======
->>>>>>> bf549288fa7e895f2d839dfd891a3c80434ac3db
   try {
     const body = await req.json();
+    const parsed = addMemberSchema.parse(body);
     await connectToDatabase();
+    const memberUser = await findUserByEmail(parsed.email);
+    if (!memberUser)
+      return new Response(JSON.stringify({ error: "User not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     const member = await ProjectMember.create({
-      userId: new mongoose.Types.ObjectId(body.userId),
+      userId: new mongoose.Types.ObjectId(memberUser._id),
       projectId: new mongoose.Types.ObjectId(params.id),
-      role: body.role || "MEMBER",
+      role: parsed.role || "MEMBER",
     });
     return new Response(JSON.stringify({ member }), {
       status: 201,

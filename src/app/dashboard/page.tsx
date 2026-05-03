@@ -1,3 +1,4 @@
+
 import AppShell from "../../components/layout/AppShell";
 import StatCard from "../../components/dashboard/StatCard";
 import TaskTable from "../../components/dashboard/TaskTable";
@@ -30,6 +31,7 @@ function formatDate(value?: string) {
 export default async function DashboardPage() {
     let tasksData: { tasks: ApiTask[] } = { tasks: [] };
     let projectsData: { projects: ApiProject[] } = { projects: [] };
+    let nowMs = 0;
 
     try {
         const headerList = await headers();
@@ -37,6 +39,8 @@ export default async function DashboardPage() {
         const proto = headerList.get("x-forwarded-proto") ?? "http";
         const baseUrl = process.env.NEXTAUTH_URL ?? `${proto}://${host}`;
         const cookie = headerList.get("cookie") ?? "";
+        const nowHeader = headerList.get("date");
+        nowMs = nowHeader ? Date.parse(nowHeader) : 0;
 
         const [tasksRes, projectsRes] = await Promise.all([
             fetch(`${baseUrl}/api/tasks`, {
@@ -66,7 +70,7 @@ export default async function DashboardPage() {
     const overdueTasks = tasks.filter((task) => {
         if (!task.dueDate) return false;
         const due = new Date(task.dueDate);
-        return task.status !== "DONE" && due.getTime() < Date.now();
+        return task.status !== "DONE" && due.getTime() < nowMs;
     }).length;
 
     const stats = [

@@ -16,11 +16,7 @@ export async function POST(req: Request) {
     const user = await createUser({
       name: parsed.name,
       email: parsed.email,
-<<<<<<< HEAD
-      password: parsed.password
-=======
       password: parsed.password,
-      role: "MEMBER",
     });
 
     return NextResponse.json(
@@ -28,11 +24,7 @@ export async function POST(req: Request) {
         user: {
           id: user._id,
           name: user.name,
-<<<<<<< HEAD
-          email: user.email
-=======
           email: user.email,
-          role: user.role,
         },
       },
       { status: 201 },
