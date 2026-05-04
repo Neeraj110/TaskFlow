@@ -108,13 +108,13 @@ export default async function DashboardPage() {
       title="Dashboard"
       subtitle="Overview of workload, risks, and delivery momentum."
     >
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
         {stats.map((stat) => (
           <StatCard key={stat.label} {...stat} />
         ))}
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+      <section className="grid gap-6 lg:grid-cols-[1.6fr_1fr] min-w-0">
         <TaskTable tasks={normalizedTasks} />
         <ActivityFeed items={[]} />
       </section>

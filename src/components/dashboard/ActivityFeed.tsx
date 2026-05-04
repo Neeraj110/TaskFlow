@@ -12,7 +12,7 @@ interface ActivityFeedProps {
 export default function ActivityFeed({ items }: ActivityFeedProps) {
     return (
         <div className="rounded-3xl border border-zinc-200 bg-white/90 p-6 shadow-sm" id="insights">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Activity</p>
                     <h2 className="mt-2 text-xl font-semibold text-zinc-900">Team pulse</h2>

@@ -28,7 +28,7 @@ export default function ProjectGrid({ projects }: ProjectGridProps) {
       />
 
       <div className="rounded-3xl border border-zinc-200 bg-white/90 p-6 shadow-sm">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">
               Projects
@@ -40,7 +40,7 @@ export default function ProjectGrid({ projects }: ProjectGridProps) {
           {/* ✅ onClick connected now */}
           <button
             onClick={() => setIsModalOpen(true)}
-            className="rounded-full border border-zinc-200 px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+            className="w-full rounded-full border border-zinc-200 px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 sm:w-auto"
           >
             + New project
           </button>
@@ -51,7 +51,7 @@ export default function ProjectGrid({ projects }: ProjectGridProps) {
             No projects yet. Create a project to see progress here.
           </div>
         ) : (
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {projects.map((project) => (
               <a
                 key={project.id}
@@ -69,11 +69,10 @@ export default function ProjectGrid({ projects }: ProjectGridProps) {
                     </p>
                   </div>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      project.userRole === "ADMIN"
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${project.userRole === "ADMIN"
                         ? "bg-purple-100 text-purple-700"
                         : "bg-zinc-100 text-zinc-500"
-                    }`}
+                      }`}
                   >
                     {project.userRole ?? "MEMBER"}
                   </span>

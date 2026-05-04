@@ -13,10 +13,10 @@ const toneMap = {
 
 export default function StatCard({ label, value, delta, tone = "amber" }: StatCardProps) {
     return (
-        <div className="rounded-3xl border border-zinc-200 bg-white/90 p-6 shadow-sm">
+        <div className="rounded-3xl border border-zinc-200 bg-white/90 p-5 shadow-sm sm:p-6">
             <p className="text-xs uppercase tracking-[0.25em] text-zinc-400">{label}</p>
             <div className="mt-4 flex items-center justify-between">
-                <p className="text-3xl font-semibold text-zinc-900">{value}</p>
+                <p className="text-2xl font-semibold text-zinc-900 sm:text-3xl">{value}</p>
                 <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${toneMap[tone]}`}>
                     {delta}
                 </span>
