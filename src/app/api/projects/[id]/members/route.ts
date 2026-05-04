@@ -42,19 +42,44 @@ export async function POST(
   try {
     const body = await req.json();
     const parsed = addMemberSchema.parse(body);
+    const normalizedEmail = parsed.email.trim().toLowerCase();
     await connectToDatabase();
-    const memberUser = await findUserByEmail(parsed.email);
+    const memberUser = await findUserByEmail(normalizedEmail);
     if (!memberUser)
-      return new Response(JSON.stringify({ error: "User not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "No user found with this email address" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+
+    const existingMember = await ProjectMember.findOne({
+      userId: memberUser._id,
+      projectId: new mongoose.Types.ObjectId(params.id),
+    });
+
+    if (existingMember)
+      return new Response(
+        JSON.stringify({ error: "This user is already a member of the project" }),
+        {
+          status: 409,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+
     const member = await ProjectMember.create({
       userId: new mongoose.Types.ObjectId(memberUser._id),
       projectId: new mongoose.Types.ObjectId(params.id),
       role: parsed.role || "MEMBER",
     });
-    return new Response(JSON.stringify({ member }), {
+
+    const populatedMember = await ProjectMember.findById(member._id).populate(
+      "userId",
+      "name email avatar",
+    );
+
+    return new Response(JSON.stringify({ member: populatedMember }), {
       status: 201,
       headers: { "Content-Type": "application/json" },
     });

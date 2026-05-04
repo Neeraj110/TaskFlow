@@ -36,12 +36,14 @@ export async function getTasks(filter: Record<string, unknown> = {}) {
   await connectToDatabase();
   return Task.find(filter)
     .populate("assignedTo", "name email")
-    .populate("projectId", "title");
+    .populate("projectId", "name");
 }
 
 export async function getTaskById(id: string) {
   await connectToDatabase();
-  return Task.findById(id).populate("assignedTo", "name email");
+  return Task.findById(id)
+    .populate("assignedTo", "name email")
+    .populate("projectId", "name");
 }
 
 export async function updateTask(id: string, payload: UpdateTaskInput) {

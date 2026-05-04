@@ -3,9 +3,8 @@ import connectToDatabase from "../lib/mongodb";
 import authOptions from "../lib/authOption";
 import User, { IUser } from "../models/User";
 
-export async function getUserFromRequest(
-  _req?: Request,
-): Promise<IUser | null> {
+export async function getUserFromRequest(req?: Request): Promise<IUser | null> {
+  void req;
   const session = await getServerSession(authOptions);
   const sessionUser = session?.user;
   if (!sessionUser?.id && !sessionUser?.email) return null;

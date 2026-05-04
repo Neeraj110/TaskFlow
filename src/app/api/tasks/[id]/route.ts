@@ -6,6 +6,33 @@ import {
   updateTask,
   deleteTask,
 } from "../../../../services/taskService";
+import mongoose from "mongoose";
+import { z } from "zod";
+
+const memberTaskUpdateSchema = z.object({
+  status: z.enum(["TODO", "IN_PROGRESS", "DONE"]),
+});
+
+function getTaskProjectId(task: {
+  projectId:
+    | string
+    | mongoose.Types.ObjectId
+    | { _id?: mongoose.Types.ObjectId | string | null }
+    | null
+    | undefined;
+}) {
+  const projectRef = task.projectId;
+
+  if (!projectRef) return null;
+  if (typeof projectRef === "string") return projectRef;
+  if (projectRef instanceof mongoose.Types.ObjectId) return projectRef.toString();
+  if (typeof projectRef === "object" && "_id" in projectRef) {
+    const nestedId = projectRef._id;
+    return nestedId ? nestedId.toString() : null;
+  }
+
+  return null;
+}
 
 export async function GET(req: Request, context: RouteContext<{ id: string }>) {
   const params = await context.params;
@@ -28,7 +55,7 @@ export async function GET(req: Request, context: RouteContext<{ id: string }>) {
     });
   const projectRole = await getProjectRole(
     user._id.toString(),
-    task.projectId.toString(),
+    getTaskProjectId(task) ?? "",
   );
   if (!projectRole)
     return new Response(JSON.stringify({ error: "Forbidden" }), {
@@ -66,7 +93,7 @@ export async function PATCH(
     });
   const projectRole = await getProjectRole(
     user._id.toString(),
-    task.projectId.toString(),
+    getTaskProjectId(task) ?? "",
   );
   if (!projectRole)
     return new Response(JSON.stringify({ error: "Forbidden" }), {
@@ -75,13 +102,30 @@ export async function PATCH(
     });
   // ADMIN can update any task. MEMBER can only update their own status.
   if (projectRole === "MEMBER") {
-    if (task.assignedTo?.toString() !== user._id.toString()) {
+    const assignedUserId =
+      task.assignedTo &&
+      typeof task.assignedTo === "object" &&
+      "_id" in task.assignedTo
+        ? task.assignedTo._id?.toString()
+        : task.assignedTo?.toString();
+
+    if (assignedUserId !== user._id.toString()) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },
       });
     }
-    const allowed = { status: body.status };
+    const parsed = memberTaskUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return new Response(
+        JSON.stringify({ error: "Members can only update task status" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+    const allowed = { status: parsed.data.status };
     const updated = await updateTask(params.id, allowed);
     return new Response(JSON.stringify({ task: updated }), {
       status: 200,
@@ -119,7 +163,7 @@ export async function DELETE(
     });
   const projectRole = await getProjectRole(
     user._id.toString(),
-    task.projectId.toString(),
+    getTaskProjectId(task) ?? "",
   );
   if (projectRole !== "ADMIN")
     return new Response(JSON.stringify({ error: "Forbidden" }), {

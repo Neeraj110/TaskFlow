@@ -34,7 +34,7 @@ export default function LoginPage() {
         <div className="min-h-screen bg-[radial-gradient(circle_at_top,#ffffff,#f2ece3,#f7f4ef)] px-4 py-12">
             <div className="mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
                 <div className="rounded-3xl border border-zinc-200 bg-white/80 p-8 shadow-sm">
-                    <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Ethara</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">TaskFlow</p>
                     <h1 className="mt-3 text-3xl font-semibold text-zinc-900">Welcome back</h1>
                     <p className="mt-2 text-sm text-zinc-500">
                         Sign in to continue managing your projects and tasks.

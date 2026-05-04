@@ -1,23 +1,42 @@
+import { z } from "zod";
 import { getUserFromRequest } from "../../../middleware/auth";
 import {
   createProject,
   getProjectsForUser,
 } from "../../../services/projectService";
-import { z } from "zod";
 
-// ✅ BUG FIX: title → name (Project model mein name hai)
-const createProjectSchema = z.object({
-  name: z.string().min(2, "Project name must be at least 2 characters"),
-  description: z.string().optional(),
-});
+const createProjectSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, "Project name must be at least 2 characters")
+      .optional(),
+    title: z
+      .string()
+      .trim()
+      .min(2, "Project name must be at least 2 characters")
+      .optional(),
+    description: z.string().optional(),
+  })
+  .transform((data) => ({
+    name: data.name ?? data.title ?? "",
+    description: data.description,
+  }))
+  .refine((data) => data.name.length >= 2, {
+    message: "Project name must be at least 2 characters",
+    path: ["name"],
+  });
 
 export async function GET(req: Request) {
   const user = await getUserFromRequest(req);
-  if (!user)
+  if (!user) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
+  }
+
   try {
     const projects = await getProjectsForUser(user._id.toString());
     return new Response(JSON.stringify({ projects }), {
@@ -33,22 +52,25 @@ export async function GET(req: Request) {
   }
 }
 
-// ✅ Koi bhi logged-in user project bana sakta hai — no global role check
 export async function POST(req: Request) {
   const user = await getUserFromRequest(req);
-  if (!user)
+  if (!user) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
+  }
+
   try {
     const body = await req.json();
     const parsed = createProjectSchema.parse(body);
+
     const project = await createProject({
-      name: parsed.name, // ✅ name (not title)
+      name: parsed.name,
       description: parsed.description,
       createdBy: user._id.toString(),
     });
+
     return new Response(JSON.stringify({ project }), {
       status: 201,
       headers: { "Content-Type": "application/json" },

@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { getUserFromRequest } from "../../../../../middleware/auth";
-import { getProjectRole } from "../../../../../services/projectService";
-import { createTask, getTasks } from "../../../../../services/taskService";
+import {
+  getProjectRole,
+  isProjectMember,
+} from "../../../../../services/projectService";
+import { createTask, getTaskById, getTasks } from "../../../../../services/taskService";
 import type { RouteContext } from "../../../../../types/route";
 
 const createProjectTaskSchema = z.object({
@@ -67,26 +70,38 @@ export async function POST(
       status: 403,
       headers: { "Content-Type": "application/json" },
     });
+  if (projectRole !== "ADMIN")
+    return new Response(
+      JSON.stringify({ error: "Only project admins can create tasks" }),
+      {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
 
   try {
     const body = await req.json();
     const parsed = createProjectTaskSchema.parse(body);
-    if (parsed.assignedTo && parsed.assignedTo !== user._id.toString()) {
-      if (projectRole !== "ADMIN")
+    if (parsed.assignedTo) {
+      const isAssigneeMember = await isProjectMember(parsed.assignedTo, params.id);
+      if (!isAssigneeMember) {
         return new Response(
-          JSON.stringify({ error: "Only admins can assign to others" }),
+          JSON.stringify({ error: "Assignee must be a member of this project" }),
           {
-            status: 403,
+            status: 400,
             headers: { "Content-Type": "application/json" },
           },
         );
+      }
     }
 
-    const task = await createTask({
+    const createdTask = await createTask({
       ...parsed,
       projectId: params.id,
       createdBy: user._id.toString(),
     });
+    const task = await getTaskById(createdTask._id.toString());
+
     return new Response(JSON.stringify({ task }), {
       status: 201,
       headers: { "Content-Type": "application/json" },

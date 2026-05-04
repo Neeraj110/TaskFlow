@@ -4,7 +4,7 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 // Isse N+1 query problem nahi hogi aur members easily query ho sakenge
 export interface IProject extends Document {
   _id: mongoose.Types.ObjectId;
-  title: string;
+  name: string;
   description: string;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -13,12 +13,12 @@ export interface IProject extends Document {
 
 const ProjectSchema = new Schema<IProject>(
   {
-    title: {
+    name: {
       type: String,
-      required: [true, "Project title is required"],
+      required: [true, "Project name is required"],
       trim: true,
-      minlength: [2, "Project title must be at least 2 characters"],
-      maxlength: [100, "Project title too long"],
+      minlength: [2, "Project name must be at least 2 characters"],
+      maxlength: [100, "Project name too long"],
     },
     description: {
       type: String,

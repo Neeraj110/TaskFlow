@@ -102,7 +102,7 @@ export default function SignupPage() {
                 </div>
 
                 <div className="rounded-3xl border border-zinc-200 bg-white/80 p-8 shadow-sm">
-                    <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Why Ethara</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Why TaskFlow</p>
                     <h1 className="mt-3 text-3xl font-semibold text-zinc-900">
                         One view for projects, people, and priorities.
                     </h1>

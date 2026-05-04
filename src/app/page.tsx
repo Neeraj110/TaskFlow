@@ -7,9 +7,9 @@ export default function Home() {
         <header className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-orange-500 text-white grid place-items-center font-semibold">E</div>
+              <div className="h-10 w-10 rounded-2xl bg-orange-500 text-white grid place-items-center font-semibold">T</div>
               <div>
-                <p className="text-sm uppercase tracking-[0.2em] text-zinc-500">Ethara</p>
+                <p className="text-sm uppercase tracking-[0.2em] text-zinc-500">TaskFlow</p>
                 <p className="text-lg font-semibold">Project Ops Suite</p>
               </div>
             </div>
@@ -24,12 +24,8 @@ export default function Home() {
                 Plan boldly, ship faster, and keep every task visible.
               </h1>
               <p className="max-w-xl text-lg text-zinc-600">
-                Ethara gives teams a focused project workspace with live status, ownership, and deadlines — all in one clean dashboard.
+                TaskFlow gives teams a focused project workspace with live status, ownership, and deadlines — all in one clean dashboard.
               </p>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <a className="rounded-full bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-orange-200" href="/signup">Start for free</a>
-                <a className="rounded-full border border-zinc-300 px-6 py-3 text-sm font-semibold text-zinc-800" href="/dashboard">View demo</a>
-              </div>
             </div>
             <div className="rounded-3xl border border-zinc-200 bg-white/80 p-6 shadow-xl">
               <div className="flex items-center justify-between text-sm text-zinc-500">

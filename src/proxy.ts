@@ -1,58 +1,42 @@
-// ✅ BUG FIX: Ye file project ROOT mein honi chahiye — src/proxy.ts nahi
-// Filename: middleware.ts (root level, next to package.json)
-// src/proxy.ts DELETE karo aur ye file root mein rakho
-
 import { NextResponse } from "next/server";
-import { withAuth } from "next-auth/middleware";
-import type { NextRequestWithAuth } from "next-auth/middleware";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-const publicRoutes = ["/", "/login", "/signup", "/api/auth"];
+const authPages = new Set(["/login", "/signup"]);
 
-// ✅ Default export hona chahiye — proxy export nahi
-export default withAuth(
-  function middleware(req: NextRequestWithAuth) {
-    const { pathname } = req.nextUrl;
+function isProtectedPath(pathname: string) {
+  return (
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/projects") ||
+    pathname.startsWith("/tasks") ||
+    (pathname.startsWith("/api") && !pathname.startsWith("/api/auth"))
+  );
+}
 
-    // Already logged in → login/signup pe redirect to dashboard
-    if (
-      (pathname === "/login" || pathname === "/signup") &&
-      req.nextauth.token
-    ) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
+export async function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
+  if (pathname.startsWith("/api/auth")) {
     return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        const { pathname } = req.nextUrl;
+  }
 
-        // Public routes — no auth needed
-        if (publicRoutes.some((route) => pathname.startsWith(route))) {
-          return true;
-        }
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET ?? process.env.JWT_SECRET,
+  });
 
-        // Protected pages
-        if (
-          pathname.startsWith("/dashboard") ||
-          pathname.startsWith("/projects") ||
-          pathname.startsWith("/tasks")
-        ) {
-          return !!token;
-        }
+  if (authPages.has(pathname) && token) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
 
-        // API routes — public auth routes allow, rest need token
-        if (pathname.startsWith("/api")) {
-          if (pathname.startsWith("/api/auth")) return true;
-          return !!token;
-        }
+  if (isProtectedPath(pathname) && !token) {
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
-        return true;
-      },
-    },
-  },
-);
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
@@ -62,6 +46,5 @@ export const config = {
     "/api/:path*",
     "/login",
     "/signup",
-    "/((?!_next/static|_next/image|favicon.ico|public).*)",
   ],
 };

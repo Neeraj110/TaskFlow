@@ -17,6 +17,40 @@ export type UpdateProjectInput = {
   description?: string;
 };
 
+function normalizeObjectId(
+  value: string | mongoose.Types.ObjectId | { _id?: unknown } | null | undefined,
+) {
+  if (!value) return null;
+
+  if (value instanceof mongoose.Types.ObjectId) {
+    return value;
+  }
+
+  if (typeof value === "object" && "_id" in value) {
+    return normalizeObjectId(value._id as
+      | string
+      | mongoose.Types.ObjectId
+      | { _id?: unknown }
+      | null
+      | undefined);
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  if (mongoose.Types.ObjectId.isValid(value)) {
+    return new mongoose.Types.ObjectId(value);
+  }
+
+  const objectIdMatch = value.match(/[a-fA-F0-9]{24}/);
+  if (objectIdMatch && mongoose.Types.ObjectId.isValid(objectIdMatch[0])) {
+    return new mongoose.Types.ObjectId(objectIdMatch[0]);
+  }
+
+  return null;
+}
+
 // ✅ Project create + creator auto ADMIN
 export async function createProject(data: CreateProjectInput) {
   await connectToDatabase();
@@ -76,9 +110,9 @@ export async function getProjectById(id: string) {
   return {
     ...project.toJSON(),
     members: members.map((m) => ({
-      memberId: m._id.toString(), // promote/remove ke liye chahiye
+      memberId: m._id.toString(),
       role: m.role,
-      user: m.userId, // populated user object
+      user: m.userId,
     })),
   };
 }
@@ -86,20 +120,32 @@ export async function getProjectById(id: string) {
 // ✅ RBAC core function — project mein user ka role
 export async function getProjectRole(
   userId: string,
-  projectId: string,
+  projectId: string | mongoose.Types.ObjectId | { _id?: unknown },
 ): Promise<ProjectRole | null> {
   await connectToDatabase();
-  const membership = await ProjectMember.findOne({ userId, projectId });
+  const normalizedProjectId = normalizeObjectId(projectId);
+  if (!normalizedProjectId) return null;
+
+  const membership = await ProjectMember.findOne({
+    userId: normalizeObjectId(userId),
+    projectId: normalizedProjectId,
+  });
   return (membership?.role as ProjectRole) || null;
 }
 
 // ✅ Simple membership check
 export async function isProjectMember(
   userId: string,
-  projectId: string,
+  projectId: string | mongoose.Types.ObjectId | { _id?: unknown },
 ): Promise<boolean> {
   await connectToDatabase();
-  const membership = await ProjectMember.findOne({ userId, projectId });
+  const normalizedProjectId = normalizeObjectId(projectId);
+  if (!normalizedProjectId) return false;
+
+  const membership = await ProjectMember.findOne({
+    userId: normalizeObjectId(userId),
+    projectId: normalizedProjectId,
+  });
   return Boolean(membership);
 }
 
@@ -140,15 +186,36 @@ export async function removeProjectMember(memberId: string) {
 
 export async function updateProject(id: string, payload: UpdateProjectInput) {
   await connectToDatabase();
-  return Project.findByIdAndUpdate(id, payload, { new: true });
+  const normalizedProjectId = normalizeObjectId(id);
+  if (!normalizedProjectId) {
+    throw new Error("Invalid project id");
+  }
+
+  const update: UpdateProjectInput = {};
+  if (typeof payload.name === "string") {
+    update.name = payload.name.trim();
+  }
+  if (typeof payload.description === "string") {
+    update.description = payload.description.trim();
+  }
+
+  return Project.findByIdAndUpdate(normalizedProjectId, update, {
+    new: true,
+    runValidators: true,
+  });
 }
 
 // ✅ Project + tasks + members sab delete
 export async function deleteProject(id: string) {
   await connectToDatabase();
+  const normalizedProjectId = normalizeObjectId(id);
+  if (!normalizedProjectId) {
+    throw new Error("Invalid project id");
+  }
+
   await Promise.all([
-    Task.deleteMany({ projectId: id }),
-    ProjectMember.deleteMany({ projectId: id }),
-    Project.findByIdAndDelete(id),
+    Task.deleteMany({ projectId: normalizedProjectId }),
+    ProjectMember.deleteMany({ projectId: normalizedProjectId }),
+    Project.findByIdAndDelete(normalizedProjectId),
   ]);
 }
