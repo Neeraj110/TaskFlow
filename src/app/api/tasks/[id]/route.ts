@@ -107,7 +107,9 @@ export async function PATCH(
       typeof task.assignedTo === "object" &&
       "_id" in task.assignedTo
         ? task.assignedTo._id?.toString()
-        : task.assignedTo?.toString();
+        : task.assignedTo
+        ? String(task.assignedTo)
+        : undefined;
 
     if (assignedUserId !== user._id.toString()) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
